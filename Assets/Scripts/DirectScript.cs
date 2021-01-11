@@ -32,13 +32,13 @@ public class DirectScript : MonoBehaviour
 
     // 四元数の逆数を算出する。
     // q : 四元数 [w, x, y, z]
-    // 共役の四元数 / 元の四元数の大きさ を算出する。
+    // 共役の四元数 / 元の四元数の大きさ を算出する。(大きさが0の場合の0割り算の発生リスクは今回は無視する)
     private float[] minor_quot(float[] q)
     {
         float[] result = new float[4] { 0.0f, 0.0f, 0.0f, 0.0f };
 
         float q_length = (float)Math.Sqrt(Math.Pow(q[0], 2) + Math.Pow(q[1], 2) + Math.Pow(q[2], 2) + Math.Pow(q[3], 2));
-        // 共役を元の四元数の大きさで割る
+        // 共役を元の四元数の大きさで割る. 0割り算発生のリスクは今回は無視する.
         result[0] = q[0] / q_length;
         result[1] = -1 * (q[1] / q_length);
         result[2] = -1 * (q[2] / q_length);
