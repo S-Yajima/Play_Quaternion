@@ -19,11 +19,6 @@ public class DirectScript : MonoBehaviour
     // 矢印
     private GameObject arrow;
 
-    // 四元数: 回転角度と軸
-    private float[] q_angle_normal = new float[4] { 0.0f, 0.0f, 0.0f, 0.0f };
-    // 四元数: 元の位置
-    private float[] q_position = new float[4] { 0.0f, 0.0f, 0.0f, 0.0f };
-
     // 時間経過
     private float delta_time = 0.0f;
     private float interval_time = 5.0f;
@@ -33,16 +28,15 @@ public class DirectScript : MonoBehaviour
     // 四元数の逆数を算出する。
     // q : 四元数 [w, x, y, z]
     // 共役の四元数 / 元の四元数の大きさ を算出する。(大きさが0の場合の0割り算の発生リスクは今回は無視する)
-    private float[] minor_quot(float[] q)
+    private Vector4 minor_quot(Vector4 q)
     {
-        float[] result = new float[4] { 0.0f, 0.0f, 0.0f, 0.0f };
+        Vector4 result = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 
-        float q_length = (float)Math.Sqrt(Math.Pow(q[0], 2) + Math.Pow(q[1], 2) + Math.Pow(q[2], 2) + Math.Pow(q[3], 2));
         // 共役を元の四元数の大きさで割る. 0割り算発生のリスクは今回は無視する.
-        result[0] = q[0] / q_length;
-        result[1] = -1 * (q[1] / q_length);
-        result[2] = -1 * (q[2] / q_length);
-        result[3] = -1 * (q[3] / q_length);
+        result.w = q.w / q.magnitude;
+        result.x = -1 * (q.x / q.magnitude);
+        result.y = -1 * (q.y / q.magnitude);
+        result.z = -1 * (q.z / q.magnitude);
 
         return result;
     }
@@ -53,21 +47,21 @@ public class DirectScript : MonoBehaviour
     // q2 : 四元数 [w, x, y, z] ([w v])
     // 下記の計算で四元数の積算を実施する
     // [q1.w * q2.w - q1.v・q2.v  q1.w * q2.v + q2.w * q1.v + q1.v * q2.v]
-    private float[] cross_quot(float[] q1, float[] q2)
+    private Vector4 cross_quot(Vector4 q1, Vector4 q2)
     {
-        float[] result = new float[4] { 0.0f, 0.0f, 0.0f, 0.0f };
+        Vector4 result = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 
         // 2つの四元数のベクトル部をVector3変数に取得する
-        Vector3 q1_v3 = new Vector3(q1[1], q1[2], q1[3]);
-        Vector3 q2_v3 = new Vector3(q2[1], q2[2], q2[3]);
+        Vector3 q1_v3 = new Vector3(q1.x, q1.y, q1.z);
+        Vector3 q2_v3 = new Vector3(q2.x, q2.y, q2.z);
 
         // q1.w * q2.w - q1.v・q2.v
-        result[0] = (q1[0] * q2[0]) - Vector3.Dot(q1_v3, q2_v3);
+        result.w = (q1.w * q2.w) - Vector3.Dot(q1_v3, q2_v3);
         // q1.v・q2.v  q1.w * q2.v + q2.w * q1.v + q1.v * q2.v
-        Vector3 tmp_v3 = (q2_v3 * q1[0]) + (q1_v3 * q2[0]) + Vector3.Cross(q1_v3, q2_v3);
-        result[1] = tmp_v3.x;
-        result[2] = tmp_v3.y;
-        result[3] = tmp_v3.z;
+        Vector3 tmp_v3 = (q2_v3 * q1.w) + (q1_v3 * q2.w) + Vector3.Cross(q1_v3, q2_v3);
+        result.x = tmp_v3.x;
+        result.y = tmp_v3.y;
+        result.z = tmp_v3.z;
 
         return result;
     }
@@ -121,22 +115,24 @@ public class DirectScript : MonoBehaviour
         float cos_val = (float)Math.Cos(half_radian);
         float sin_val = (float)Math.Sin(half_radian);
 
+
         // 四元数をfloatの配列(4要素)で生成する
         // Sphereの座標を示す四元数
-        float[] p1 = new float[4] { 0.0f, this.sphere_1_position_v3.x, this.sphere_1_position_v3.y, this.sphere_1_position_v3.z };
-        float[] p2 = new float[4] { 0.0f, this.sphere_2_position_v3.x, this.sphere_2_position_v3.y, this.sphere_2_position_v3.z };
-        // 角変位を示す四元数
-        float[] q = new float[4] { cos_val, sin_val * this.quot_axis_v3.x, sin_val * this.quot_axis_v3.y, sin_val * this.quot_axis_v3.z };
+        Vector4 p1 = new Vector4(this.sphere_1_position_v3.x, this.sphere_1_position_v3.y, this.sphere_1_position_v3.z);
+        Vector4 p2 = new Vector4(this.sphere_2_position_v3.x, this.sphere_2_position_v3.y, this.sphere_2_position_v3.z);
+        // 角変位を示す四元数. Vector4() コンストラクタの引数順序に注意。wは最後。
+        Vector4 q = new Vector4(sin_val * this.quot_axis_v3.x, sin_val * this.quot_axis_v3.y, sin_val * this.quot_axis_v3.z, cos_val);
         // 角変位を示す四元数の逆数
-        float[] q_minor = minor_quot(q);
+        Vector4 q_minor = minor_quot(q);
+
 
         // 四元数の積算で回転後の座標を算出しオブジェクトに設定する: 角変位の四元数 * 座標の四元数 * 逆数の四元数
-        float[] qp1 = cross_quot(q, p1);
-        float[] qp1q_minor = cross_quot(qp1, q_minor);
-        this.sphere_1.transform.position = new Vector3(qp1q_minor[1], qp1q_minor[2], qp1q_minor[3]);
+        Vector4 qp1 = cross_quot(q, p1);
+        Vector4 qp1q_minor = cross_quot(qp1, q_minor);
+        this.sphere_1.transform.position = new Vector3(qp1q_minor.x, qp1q_minor.y, qp1q_minor.z);
 
-        float[] qp2 = cross_quot(q, p2);
-        float[] qp2q_minor = cross_quot(qp2, q_minor);
-        this.sphere_2.transform.position = new Vector3(qp2q_minor[1], qp2q_minor[2], qp2q_minor[3]);
+        Vector4 qp2 = cross_quot(q, p2);
+        Vector4 qp2q_minor = cross_quot(qp2, q_minor);
+        this.sphere_2.transform.position = new Vector3(qp2q_minor.x, qp2q_minor.y, qp2q_minor.z);
     }
 }
