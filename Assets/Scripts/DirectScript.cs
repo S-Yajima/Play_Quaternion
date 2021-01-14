@@ -57,7 +57,7 @@ public class DirectScript : MonoBehaviour
 
         // q1.w * q2.w - q1.v・q2.v
         result.w = (q1.w * q2.w) - Vector3.Dot(q1_v3, q2_v3);
-        // q1.v・q2.v  q1.w * q2.v + q2.w * q1.v + q1.v * q2.v
+        // q1.w * q2.v + q2.w * q1.v + q1.v * q2.v
         Vector3 tmp_v3 = (q2_v3 * q1.w) + (q1_v3 * q2.w) + Vector3.Cross(q1_v3, q2_v3);
         result.x = tmp_v3.x;
         result.y = tmp_v3.y;
